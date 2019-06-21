@@ -8,11 +8,12 @@ void setup() {
  Serial.begin(9600);
  for (i=0;i<899;i= i+2){
     if(j==0){
-      buf[i] = k;      
+      buf[i] = sin(k/360*2*3.1415);      
       buf[i+1] = i;
+      k++;
     } 
     else if(j==1){
-      buf[i] = k+1;
+      buf[i] = k;
       buf[i+1] = 4;
     }
     else if (j==2){
@@ -25,7 +26,7 @@ void setup() {
     else{
         j=j+1;
     }
-    if( k == 250){
+    if( k == 360){
      k = 0;  
     }
  }

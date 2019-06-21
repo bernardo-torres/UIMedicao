@@ -7,6 +7,9 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from pyqtgraph import *
+from pyqtgraph import PlotWidget
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -72,7 +75,6 @@ class Ui_MainWindow(object):
         self.label_41.setText(_translate("MainWindow", "Baud Rate"))
         self.label_35.setText(_translate("MainWindow", "Update Time [s]"))
 
-from plotwidget import PlotWidget
 
 if __name__ == "__main__":
     import sys
@@ -82,4 +84,3 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
-

@@ -1,8 +1,10 @@
 from UI import *
 import sys
 import serial
+from UICode_methods import *
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
+import pyqtgraph as pg
 
 
 global porta, N, readAvailable
@@ -98,6 +100,12 @@ def program():
             read_buffer = read_all()
             print(read_buffer)
             print(read_buffer[2], read_buffer[6])
+            a = np.zeros(150)
+            for i in range(0, N-1, 6):
+                j = int(i/6)
+                a[j] = read_buffer[i]
+            #print(a)
+            ui.graphicsView.plot(a)
 
     finally:
         QtCore.QTimer.singleShot(time, program)
@@ -148,3 +156,6 @@ time = ui.doubleSpinBox_UpdateTime.value() * 1000
 #timer = QtCore.QTimer()
 #timer.timeout.connect(program)
 #timer.start(time)
+
+MainWindow.show()
+sys.exit(app.exec_())
