@@ -1,10 +1,13 @@
 from UI import *
 import sys
+import serial
+from UICode_methods import *
 
-# Roda janela
-app = QtWidgets.QApplication(sys.argv)
-MainWindow = QtWidgets.QMainWindow()
-ui = Ui_MainWindow()
-ui.setupUi(MainWindow)
+
+
+
+
+
+
 MainWindow.show()
 sys.exit(app.exec_())
