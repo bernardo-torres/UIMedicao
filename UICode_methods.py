@@ -2,9 +2,13 @@ from UI import *
 import sys
 import serial
 from PyQt5 import QtCore, QtWidgets
+import numpy as np
 
-global porta
+
+global porta, N, readAvailable
 porta = serial.Serial()
+N = 900
+readAvailable = False
 
 
 def handleButton():
@@ -66,6 +70,8 @@ def start_program():
         porta.open()
         print(" Porta serial " + str(porta.name) + " aberta")
         print(porta.is_open)
+        global readAvailable
+        readAvailable = True
 
         # Inicia programa
         program()
@@ -81,16 +87,46 @@ def start_program():
 
 def program():
     try:
-        if porta.is_open:
-            while True:
-                while (porta.inWaiting() == 0):
+        if readAvailable:
+            while False:
+                while (porta.inWaiting() < N):
                     pass
-                line = porta.readline()
+
+                line = porta.read(N)
                 print(line)
                 break
+            read_buffer = read_all()
+            print(read_buffer)
+            print(read_buffer[2], read_buffer[6])
+
     finally:
         QtCore.QTimer.singleShot(time, program)
 
+
+def read_all():
+    """Read all characters on the serial port and return them."""
+    if not porta.timeout:
+        raise TypeError('Port needs to have a timeout set!')
+
+    read_buffer = b''
+    while True:
+        firstByte = porta.read()
+        print(firstByte)
+        if int.from_bytes(firstByte, byteorder='big') == 254:
+            #print("achou first byte")
+            break
+    while True:
+        # Read in chunks. Each chunk will wait as long as specified by
+        # timeout. Increase chunk_size to fail quicker
+
+        byte_chunk = porta.read(size=N)
+        read_buffer += byte_chunk
+        if len(byte_chunk) == N:
+            break
+        else:
+            print('Chegou aqui')
+
+    return read_buffer
 
 def processOneThing():
     print(22)

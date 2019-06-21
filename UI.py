@@ -17,12 +17,6 @@ class Ui_MainWindow(object):
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(200, 80, 75, 23))
         self.pushButton.setObjectName("pushButton")
-        self.graphicsView = QtWidgets.QGraphicsView(self.centralwidget)
-        self.graphicsView.setGeometry(QtCore.QRect(330, 120, 401, 211))
-        self.graphicsView.setObjectName("graphicsView")
-        self.graphicsView_2 = QtWidgets.QGraphicsView(self.centralwidget)
-        self.graphicsView_2.setGeometry(QtCore.QRect(330, 350, 401, 192))
-        self.graphicsView_2.setObjectName("graphicsView_2")
         self.comboBox_SerialPorts = QtWidgets.QComboBox(self.centralwidget)
         self.comboBox_SerialPorts.setGeometry(QtCore.QRect(20, 60, 71, 21))
         self.comboBox_SerialPorts.setObjectName("comboBox_SerialPorts")
@@ -51,6 +45,9 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_UpdateTime.setDecimals(3)
         self.doubleSpinBox_UpdateTime.setProperty("value", 0.01)
         self.doubleSpinBox_UpdateTime.setObjectName("doubleSpinBox_UpdateTime")
+        self.graphicsView = PlotWidget(self.centralwidget)
+        self.graphicsView.setGeometry(QtCore.QRect(330, 50, 461, 231))
+        self.graphicsView.setObjectName("graphicsView")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
@@ -75,6 +72,7 @@ class Ui_MainWindow(object):
         self.label_41.setText(_translate("MainWindow", "Baud Rate"))
         self.label_35.setText(_translate("MainWindow", "Update Time [s]"))
 
+from plotwidget import PlotWidget
 
 if __name__ == "__main__":
     import sys
