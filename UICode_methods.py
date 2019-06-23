@@ -5,20 +5,25 @@ from UICode_methods import *
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import pyqtgraph as pg
+from time import time, sleep
 
 
 global porta, N, readAvailable
 porta = serial.Serial()
-N = 900
+Nchannels = 3
+Nsamples = 105  # no of samples per channel
+Nbytes = Nsamples*2  # no of bytes received per channel
+tam = Nbytes * Nchannels  # no of bytes received total
 readAvailable = False
+samplingFreq = 1096
 
-
-def handleButton():
-    print("clk")
-    #while (porta.inWaiting() == 0):
-    #    pass
-    #line = porta.readline()
-    print(4)
+tensao = np.zeros(int(Nsamples))
+corrente = np.zeros(int(Nsamples))
+potencia = np.zeros(int(Nsamples))
+iluminancia = np.zeros(int(Nsamples/3))
+termopar = np.zeros(int(Nsamples/3))
+lm35 = np.zeros(int(Nsamples/3))
+temp = np.arange(0, 95.8, 0.9124)
 
 
 # Lista as portas seriais disponiveis
@@ -74,10 +79,11 @@ def start_program():
         print(porta.is_open)
         global readAvailable
         readAvailable = True
-
+        sleep(2)
+        print('aq')
         # Inicia programa
         program()
-        print(2)
+        print('Fecho')
     except serial.serialutil.SerialException:
         dlg = QMessageBox(None)
         dlg.setWindowTitle("Error!")
@@ -90,22 +96,36 @@ def start_program():
 def program():
     try:
         if readAvailable:
-            while False:
-                while (porta.inWaiting() < N):
-                    pass
-
-                line = porta.read(N)
-                print(line)
-                break
+            # Le conjunto de dados da porta serial
             read_buffer = read_all()
             print(read_buffer)
-            print(read_buffer[2], read_buffer[6])
-            a = np.zeros(150)
-            for i in range(0, N-1, 6):
-                j = int(i/6)
-                a[j] = read_buffer[i]
-            #print(a)
-            ui.graphicsView.plot(a)
+
+            for i in range(0, int(Nbytes), 2):
+                aux = read_buffer[i]
+                tensao[int(i/2)] = (aux << 8) | read_buffer[i+1]
+            for j in range(i+2, int(Nbytes)+i+2 , 2):
+                aux = read_buffer[j]
+                index = int((j-i-2)/2)
+                corrente[index] = (aux << 8) | read_buffer[j+1]
+
+            # Atualiza grafico tensao
+            ui.graphicsView.clear()
+            ui.graphicsView.plot(temp, tensao, pen='r')
+            ui.lineEdit.setText(str(np.amax(tensao)))
+            ui.lineEdit_2.setText(str(round(np.sqrt(np.amax(tensao)), 2)))
+
+
+            # Atualiza grafico corrente
+            ui.graphicsView_2.clear()
+            ui.graphicsView_2.plot(temp, corrente, pen='r')
+            ui.lineEdit_3.setText(str(np.amax(corrente)))
+            ui.lineEdit_4.setText(str(round(np.sqrt(np.amax(corrente)), 2)))
+
+
+            potencia = tensao*corrente
+            ui.graphicsView_3.clear()
+            ui.graphicsView_3.plot(temp, potencia, pen='r')
+            print(32)
 
     finally:
         QtCore.QTimer.singleShot(time, program)
@@ -118,8 +138,10 @@ def read_all():
 
     read_buffer = b''
     while True:
+        while (porta.inWaiting() == 0):
+            pass
         firstByte = porta.read()
-        print(firstByte)
+        print('FB = ' + str(int.from_bytes(firstByte, byteorder='big')))
         if int.from_bytes(firstByte, byteorder='big') == 254:
             #print("achou first byte")
             break
@@ -127,9 +149,9 @@ def read_all():
         # Read in chunks. Each chunk will wait as long as specified by
         # timeout. Increase chunk_size to fail quicker
 
-        byte_chunk = porta.read(size=N)
+        byte_chunk = porta.read(size=tam)
         read_buffer += byte_chunk
-        if len(byte_chunk) == N:
+        if len(byte_chunk) == tam:
             break
         else:
             print('Chegou aqui')
@@ -142,20 +164,29 @@ def processOneThing():
 
 # Roda janela
 app = QtWidgets.QApplication(sys.argv)
+app.setStyle("fusion")
 MainWindow = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
 
 # Conecta sinal do botao com a funcao
-ui.pushButton.clicked.connect(handleButton)
 ui.comboBox_SerialPorts.addItems(serial_ports())  # mostra as portas seriais disponíveis
 ui.pushButton_UpdatePorts.clicked.connect(update_ports)  # botão para atualizar as portas seriis disponíveis
 ui.pushButton_StartProgram.clicked.connect(start_program)  # botão para iniciar o programa
 # ui.comboBox_Baudrate.currentIndexChanged.connect(self.selection_baudrate)
 time = ui.doubleSpinBox_UpdateTime.value() * 1000
-#timer = QtCore.QTimer()
-#timer.timeout.connect(program)
-#timer.start(time)
+
+
+ui.graphicsView.setLabel('left', "Tensão", units='V')
+ui.graphicsView.setLabel('bottom', "Tempo", units='ms')
+ui.graphicsView.setYRange(0, 1000)
+
+
+ui.graphicsView_2.setLabel('left', "Corrente", units='A')
+ui.graphicsView_2.setLabel('bottom', "Tempo", units='ms')
+ui.graphicsView_2.setYRange(0, 1000)
+
+ui.lineEdit_5.setText(str(samplingFreq))
 
 MainWindow.show()
 sys.exit(app.exec_())

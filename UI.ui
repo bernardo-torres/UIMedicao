@@ -6,27 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1159</width>
+    <height>613</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="pushButton">
-    <property name="geometry">
-     <rect>
-      <x>200</x>
-      <y>80</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>sdsfdf</string>
-    </property>
-   </widget>
    <widget class="QComboBox" name="comboBox_SerialPorts">
     <property name="geometry">
      <rect>
@@ -61,7 +48,7 @@
     </property>
     <item>
      <property name="text">
-      <string>9600</string>
+      <string>250000</string>
      </property>
     </item>
     <item>
@@ -69,12 +56,22 @@
       <string>115200</string>
      </property>
     </item>
+    <item>
+     <property name="text">
+      <string>345600</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>9600</string>
+     </property>
+    </item>
    </widget>
    <widget class="QPushButton" name="pushButton_StartProgram">
     <property name="geometry">
      <rect>
-      <x>120</x>
-      <y>260</y>
+      <x>20</x>
+      <y>160</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -112,8 +109,8 @@
    <widget class="QLabel" name="label_35">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>10</y>
+      <x>10</x>
+      <y>230</y>
       <width>91</width>
       <height>16</height>
      </rect>
@@ -125,8 +122,8 @@
    <widget class="QDoubleSpinBox" name="doubleSpinBox_UpdateTime">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>30</y>
+      <x>20</x>
+      <y>250</y>
       <width>62</width>
       <height>22</height>
      </rect>
@@ -138,23 +135,356 @@
      <double>0.010000000000000</double>
     </property>
    </widget>
-   <widget class="PlotWidget" name="graphicsView">
+   <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
-      <x>330</x>
-      <y>50</y>
-      <width>461</width>
-      <height>231</height>
+      <x>100</x>
+      <y>0</y>
+      <width>1061</width>
+      <height>591</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>Tab 1</string>
+     </attribute>
+     <widget class="PlotWidget" name="graphicsView_2">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>300</y>
+        <width>481</width>
+        <height>241</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Box</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="backgroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>255</blue>
+        </color>
+       </brush>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="graphicsView">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>20</y>
+        <width>481</width>
+        <height>241</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Box</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="backgroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>255</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="foregroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>60</y>
+        <width>41</width>
+        <height>16</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_2">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>120</y>
+        <width>41</width>
+        <height>16</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_3">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>350</y>
+        <width>41</width>
+        <height>16</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_4">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>400</y>
+        <width>41</width>
+        <height>16</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>0</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Tensão (V)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>280</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Corrente (A)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>40</y>
+        <width>41</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Pico (V)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>100</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>RMS (V)</string>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="graphicsView_3">
+      <property name="geometry">
+       <rect>
+        <x>560</x>
+        <y>20</y>
+        <width>481</width>
+        <height>241</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Box</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="backgroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>255</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="foregroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="renderHints">
+       <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="graphicsView_4">
+      <property name="geometry">
+       <rect>
+        <x>560</x>
+        <y>300</y>
+        <width>481</width>
+        <height>241</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Box</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="backgroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>255</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="foregroundBrush">
+       <brush brushstyle="NoBrush">
+        <color alpha="255">
+         <red>255</red>
+         <green>255</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_8">
+      <property name="geometry">
+       <rect>
+        <x>740</x>
+        <y>0</y>
+        <width>131</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Potencia instantanea (W)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_9">
+      <property name="geometry">
+       <rect>
+        <x>780</x>
+        <y>280</y>
+        <width>131</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Energia (J)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_10">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>330</y>
+        <width>41</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Pico (V)</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>380</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>RMS (V)</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Tab 2</string>
+     </attribute>
+    </widget>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_5">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>430</y>
+      <width>41</width>
+      <height>16</height>
      </rect>
     </property>
    </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>400</y>
+      <width>71</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>S. Frequency</string>
+    </property>
+   </widget>
+   <zorder>tabWidget</zorder>
+   <zorder>comboBox_SerialPorts</zorder>
+   <zorder>pushButton_UpdatePorts</zorder>
+   <zorder>comboBox_Baudrate</zorder>
+   <zorder>pushButton_StartProgram</zorder>
+   <zorder>label_2</zorder>
+   <zorder>label_41</zorder>
+   <zorder>label_35</zorder>
+   <zorder>doubleSpinBox_UpdateTime</zorder>
+   <zorder>lineEdit_5</zorder>
+   <zorder>label_11</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1159</width>
      <height>21</height>
     </rect>
    </property>
