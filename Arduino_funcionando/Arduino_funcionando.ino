@@ -51,6 +51,7 @@ void loop()
 }
 
 ISR(ADC_vect){
+  // terminou conversao do ADC, armazena resultado nas variaveis
   low_buffer = ADCL;
    high_buffer = ADCH;
   
@@ -72,6 +73,7 @@ ISR(TIMER0_COMPA_vect){
 
       if (counter == tam){
         counter = 0;
+        // Envia os bytes 
         Serial.write(254);
         Serial.write(dataVector[0], tam);
         Serial.write(dataVector[1], tam);
