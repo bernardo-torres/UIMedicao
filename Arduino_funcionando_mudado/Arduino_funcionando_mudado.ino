@@ -1,6 +1,6 @@
 
 int i=0;
-byte buf[400],low_buffer,high_buffer;
+byte buf[210],low_buffer,high_buffer, buf2[70];
 const int N = 5; // no of channels
 const int tam = 210; // tam/2 amostras de cada canal, tam bytes por canal
 int sample, CH;
@@ -42,7 +42,10 @@ void setup() {
 
  // buf e um vetor de dados pra teste
  for(i=0; i<tam;i++){
-    buf[i] = 0;
+    buf[i] = i;
+  }
+  for(i=0; i<70;i++){
+    buf2[i] = i;
   }
 }
 
