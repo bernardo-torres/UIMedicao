@@ -8,17 +8,23 @@ import pyqtgraph as pg
 from time import sleep, time
 
 
-global porta, N, readAvailable, tim, lastTime
+global porta, readAvailable, tim, lastTime, energia_acumulada, current_minute, last_en_time
 porta = serial.Serial()
 Nchannels = 3
-Nsamples = 105  # no of samples per channel
+Nsamples = 147  # no of samples per channel
 Nbytes = Nsamples*2  # no of bytes received per channel
 tam = Nbytes * Nchannels  # no of bytes received total
 readAvailable = False
-samplingFreq = 1096
+samplingFreq = 1488
 error_count = 0
 tim = time()
 lastTime = time()
+last_en_time = time()
+
+current_minute = 0
+energia_acumulada = 0
+En = np.array([])
+x_tE = np.array([])
 
 tensao = 0
 corrente = np.zeros(int(Nsamples))
@@ -31,6 +37,13 @@ lm35 = np.zeros(int(Nsamples/3))
 temp = np.arange(0, 1000/samplingFreq*Nsamples, 1000/samplingFreq)
 temp2 = np.arange(0, 1000/samplingFreq*Nsamples, 3000/samplingFreq)
 
+line60hz1 = np.zeros(2)
+line60hz2 = np.zeros(2)
+line60hz1[0] = 60
+line60hz1[1] = 60
+line60hz2[0] = 0
+line60hz2[1] = 1
+
 
 class values:
     def __init__(self):
@@ -42,6 +55,7 @@ class values:
         self.temperatura = 0
         self.fft_tensao = 0
         self.fft_corrente = 0
+        self.potencia = 0
 
 
 # Lista as portas seriais disponiveis
@@ -198,6 +212,26 @@ def buffer_analisys(buf):
     tensao_freq[0] *= 0.5
     fft_corrente[0] *= 0.5
 
+    potencia = tensao*corrente
+
+    # energia (multiplica sempre pelo periodo)
+    global energia_acumulada, current_minute, last_en_time, x_tE, En
+    energia_acumulada += sum(potencia)/samplingFreq
+    if time() - last_en_time > 60:
+        last_en_time = time()
+        if current_minute < 60:
+            En = np.append(En, energia_acumulada)
+            x_tE = np.append(x_tE, current_minute)
+        else:
+            En = np.append(En, energia_acumulada)
+            En = np.delete(En, 0)
+            x_tE += 1
+            ui.graphicsView_4.setXRange(current_minute - 9, current_minute)
+        ui.graphicsView_4.clear()
+        ui.graphicsView_4.plot(x_tE, En,pen=pg.mkPen('r'))
+        current_minute += 1
+        energia_acumulada = 0
+
     data = values()
     data.tensao = tensao
     data.corrente = corrente
@@ -207,6 +241,7 @@ def buffer_analisys(buf):
     data.temperatura = temperatura
     data.fft_tensao = tensao_freq
     data.fft_corrente = fft_corrente
+    data.potencia = potencia
 
     return data
 
@@ -224,40 +259,59 @@ def program():
             ui.graphicsView.clear()
             ui.graphicsView.plot(temp, data.tensao, pen='r')
             ui.lineEdit.setText(str(np.amax(data.tensao)))
-            ui.lineEdit_2.setText(str(round(np.amax(data.tensao)/np.sqrt(2), 2)))
+            rms = np.sqrt(np.mean(data.tensao**2))
+            ui.lineEdit_2.setText(str(round(rms, 2)))
 
             # Atualiza grafico corrente
             ui.graphicsView_2.clear()
             ui.graphicsView_2.plot(temp, data.corrente, pen=pg.mkPen('b'))
             ui.lineEdit_3.setText(str(np.amax(data.corrente)))
-            ui.lineEdit_4.setText(str(round(np.amax(data.corrente)/np.sqrt(2), 2)))
+            rms = np.sqrt(np.mean(data.corrente**2))
+            ui.lineEdit_4.setText(str(round(rms, 2)))
 
-            # Atualiza grafico potencia
-            potencia = data.tensao*data.corrente
-            ui.graphicsView_3.clear()
-            ui.graphicsView_3.plot(temp, potencia, pen='r')
+            tab_index = ui.tabWidget_2.currentIndex()
+            if tab_index == 0:
+                # Atualiza grafico potencia
+                ui.graphicsView_3.clear()
+                ui.graphicsView_3.plot(temp, data.potencia, pen='r')
 
-            # Atualiza grafico iluminancia
-            ui.graphicsView_6.clear()
-            ui.graphicsView_6.plot(temp2, data.iluminancia, pen=pg.mkPen('r'))
-            ui.lineEdit_5.setText(str(round(np.mean(data.iluminancia), 2)))
 
-            # Atualiza grafico temperaturas
-            ui.graphicsView_5.clear()
-            ui.graphicsView_5.plot(temp2, data.termopar, pen=pg.mkPen('r'))
-            ui.graphicsView_5.plot(temp2, data.lm35, pen=pg.mkPen('b'))
-            ui.graphicsView_5.plot(temp2, data.temperatura, pen=pg.mkPen('g'))
-            ui.lineEdit_6.setText(str(round(np.mean(data.lm35), 2)))
-            ui.lineEdit_7.setText(str(round(np.mean(data.termopar), 2)))
+            elif tab_index == 2:
+                # Atualiza grafico iluminancia
+                ui.graphicsView_6.clear()
+                ui.graphicsView_6.plot(temp2, data.iluminancia, pen=pg.mkPen('r'))
+                ui.lineEdit_5.setText(str(round(np.mean(data.iluminancia), 2)))
 
-            # FFt tensao
-            print(len(data.fft_tensao))
-            ui.graphicsView_7.clear()
-            ui.graphicsView_7.plot(data.fft_tensao, pen=pg.mkPen('g'))
+                # Atualiza grafico temperaturas
+                ui.graphicsView_5.clear()
+                ui.graphicsView_5.plot(temp2, data.termopar, pen=pg.mkPen('r'))
+                ui.graphicsView_5.plot(temp2, data.lm35, pen=pg.mkPen('b'))
+                ui.graphicsView_5.plot(temp2, data.temperatura, pen=pg.mkPen('g'))
+                ui.lineEdit_6.setText(str(round(np.mean(data.lm35), 2)))
+                ui.lineEdit_7.setText(str(round(np.mean(data.termopar), 2)))
+            elif tab_index == 1:
 
-            # FFt corrente
-            ui.graphicsView_8.clear()
-            ui.graphicsView_8.plot(data.fft_corrente,  pen=pg.mkPen('g'))
+                # Vetor de frequencias
+                f = np.arange(0, Nsamples/2-1)/Nsamples
+                f = samplingFreq*f
+
+                # FFt tensao
+                max = np.max(data.fft_tensao)
+                ui.graphicsView_7.clear()
+                ui.graphicsView_7.plot(f, data.fft_tensao, pen=pg.mkPen('k'))
+                #ui.graphicsView_7.addLine(x=60, y=None, pen=pg.mkPen('g'))
+                ui.graphicsView_7.plot(line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
+                ui.graphicsView_7.plot(2*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
+                ui.graphicsView_7.plot(3*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
+
+                # FFt corrente
+                max = np.max(data.fft_corrente)
+                ui.graphicsView_8.clear()
+                ui.graphicsView_8.plot(f, data.fft_corrente,  pen=pg.mkPen('k'))
+                ui.graphicsView_8.plot(line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
+                ui.graphicsView_8.plot(2*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
+                ui.graphicsView_8.plot(3*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
+
 
             # Calcula FPS
             global tim, lastTime
@@ -282,7 +336,7 @@ def read_all():
         while (porta.inWaiting() == 0):
             pass
         firstByte = porta.read()
-        print('FB = ' + str(int.from_bytes(firstByte, byteorder='big')))
+        #print('FB = ' + str(int.from_bytes(firstByte, byteorder='big')))
         if int.from_bytes(firstByte, byteorder='big') == 254:
             #print("achou first byte")
             break
@@ -335,6 +389,12 @@ ui.graphicsView_3.setLabel('left', "Potencia", units='W')
 ui.graphicsView_3.setLabel('bottom', "Tempo", units='ms')
 ui.graphicsView_3.setYRange(0, 1000)
 
+# Labels energia
+ui.graphicsView_4.setLabel('left', "Energia acumulada", units='J/min')
+ui.graphicsView_4.setLabel('bottom', "Tempo", units='min')
+#ui.graphicsView_4.setYRange(0, 1000)
+
+
 # Labels temperatura
 ui.graphicsView_5.setLabel('left', "Temperatura", units='C')
 ui.graphicsView_5.setLabel('bottom', "Tempo", units='ms')
@@ -344,6 +404,16 @@ ui.graphicsView_5.setYRange(0, 300)
 ui.graphicsView_6.setLabel('left', "Iluminancia", units='lx')
 ui.graphicsView_6.setLabel('bottom', "Tempo", units='ms')
 ui.graphicsView_6.setYRange(0, 300)
+
+# Labels tensao fft
+ui.graphicsView_7.setLabel('left', "Amplitude")
+ui.graphicsView_7.setLabel('bottom', "Frequencia", units='Hz')
+# ui.graphicsView_7.setYRange(0, 1000)
+
+# Labels corrente fft
+ui.graphicsView_8.setLabel('left', "Amplitude")
+ui.graphicsView_8.setLabel('bottom', "Frequencia", units='Hz')
+# ui.graphicsView_8.setYRange(0, 1000)
 
 # Sampling freq
 ui.label_16.setText(str(samplingFreq) + ' Hz')

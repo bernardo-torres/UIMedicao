@@ -145,7 +145,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_3">
      <attribute name="title">
@@ -174,7 +174,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Energia (J)</string>
+       <string>Energia (J/min)</string>
       </property>
      </widget>
      <widget class="PlotWidget" name="graphicsView_3">
@@ -847,7 +847,7 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>

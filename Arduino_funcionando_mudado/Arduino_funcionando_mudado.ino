@@ -1,13 +1,13 @@
 
 int i=0;
 byte buf[210],low_buffer,high_buffer, buf2[70];
-const int N = 5; // no of channels
-const int tam = 210; // tam/2 amostras de cada canal, tam bytes por canal
+const int nsamples = 147; // no of channels
+const int tam = 2*nsamples; // tam/2 amostras de cada canal, tam bytes por canal
 int sample, CH;
 
 bool procStatus =  false, next = true, last_ch = false;
 byte dataVector[2][tam];
-byte bytesiluminancia[70], bytestemp1[70], bytestemp2[70]; 
+byte bytesiluminancia[tam/3], bytestemp1[tam/3], bytestemp2[tam/3]; 
 int counter = 0, cnt = 0, a = 0;
 int counter70 = 0;
 
@@ -22,7 +22,7 @@ void setup() {
 // TIMER0: pre-scaler = 64, ctc, 8.9khz
    TCCR0A = 0x02; // CTC mode
    TCCR0B = 0x04; // pre-scaler 1256
-   OCR0A = 19; // == 28
+   OCR0A = 14; // == 28
    TIMSK0 = 0x00;
 
    PRR &= 0b11111110; // PRADC = 0  
@@ -120,9 +120,9 @@ ISR(TIMER0_COMPA_vect){
         Serial.write(254);
         Serial.write(dataVector[0], tam);
         Serial.write(dataVector[1], tam);
-        Serial.write(bytesiluminancia, 70);
-        Serial.write(bytestemp1, 70);
-        Serial.write(bytestemp2, 70);
+        Serial.write(bytesiluminancia, tam/3);
+        Serial.write(bytestemp1, tam/3);
+        Serial.write(bytestemp2, tam/3);
         
     }
 }
