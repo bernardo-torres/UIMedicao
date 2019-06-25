@@ -8,18 +8,19 @@ import pyqtgraph as pg
 from time import sleep, time
 
 
-global porta, readAvailable, tim, lastTime, energia_acumulada, current_minute, last_en_time
+global porta, readAvailable, tim, lastTime, energia_acumulada, current_minute, last_en_time, error_count
 porta = serial.Serial()
 Nchannels = 3
-Nsamples = 147  # no of samples per channel
+Nsamples = 150  # no of samples per channel`
 Nbytes = Nsamples*2  # no of bytes received per channel
 tam = Nbytes * Nchannels  # no of bytes received total
 readAvailable = False
-samplingFreq = 1488
+samplingFreq = 2083
 error_count = 0
 tim = time()
 lastTime = time()
 last_en_time = time()
+counter = 0
 
 current_minute = 0
 energia_acumulada = 0
@@ -173,14 +174,14 @@ def buffer_analisys(buf):
 
         ganho_tensao = 1001
         ganho_corrente = 5/6
-        offset = 2.5
+        offset = 2.35
 
         ganho_LM = 100/(1 + 2000/220)
 
         ganho_transimp = 1/150000
         ganho_fotodiodo = 10000000000/778
 
-        offset_erro = 4
+        offset_erro = 2.75
         ganho_inversor = -270/180
         ganho_termopar = 82/200082
         ganho_seebeck = 10000000/406
@@ -212,14 +213,14 @@ def buffer_analisys(buf):
     tensao_freq[0] *= 0.5
     fft_corrente[0] *= 0.5
 
-    potencia = tensao*corrente
+    potencia = tensao*corrente/1000
 
     # energia (multiplica sempre pelo periodo)
     global energia_acumulada, current_minute, last_en_time, x_tE, En
     energia_acumulada += sum(potencia)/samplingFreq
     if time() - last_en_time > 60:
         last_en_time = time()
-        if current_minute < 60:
+        if current_minute < 10:
             En = np.append(En, energia_acumulada)
             x_tE = np.append(x_tE, current_minute)
         else:
@@ -253,19 +254,32 @@ def program():
             # Le conjunto de dados da porta serial
             read_buffer = read_all()
             # print(read_buffer)
+
+            # Calcula FPS
+            global tim, lastTime
+            tim = time()
+            deltaT = round((tim - lastTime)*1000)
+            fps = round(1/(tim-lastTime), 2)
+            ui.label_15.setText(str(fps))
+            lastTime = tim
+
+            if ui.checkBox_2.isChecked() == 1:
+                return
+
             data = buffer_analisys(read_buffer)
 
             # Atualiza grafico tensao
+
             ui.graphicsView.clear()
             ui.graphicsView.plot(temp, data.tensao, pen='r')
-            ui.lineEdit.setText(str(np.amax(data.tensao)))
+            ui.lineEdit.setText(str(round(np.amax(data.tensao), 2)))
             rms = np.sqrt(np.mean(data.tensao**2))
             ui.lineEdit_2.setText(str(round(rms, 2)))
 
             # Atualiza grafico corrente
             ui.graphicsView_2.clear()
             ui.graphicsView_2.plot(temp, data.corrente, pen=pg.mkPen('b'))
-            ui.lineEdit_3.setText(str(np.amax(data.corrente)))
+            ui.lineEdit_3.setText(str(round(np.amax(data.corrente),2)))
             rms = np.sqrt(np.mean(data.corrente**2))
             ui.lineEdit_4.setText(str(round(rms, 2)))
 
@@ -274,7 +288,6 @@ def program():
                 # Atualiza grafico potencia
                 ui.graphicsView_3.clear()
                 ui.graphicsView_3.plot(temp, data.potencia, pen='r')
-
 
             elif tab_index == 2:
                 # Atualiza grafico iluminancia
@@ -292,9 +305,12 @@ def program():
             elif tab_index == 1:
 
                 # Vetor de frequencias
-                f = np.arange(0, Nsamples/2-1)/Nsamples
-                f = samplingFreq*f
+                if (Nsamples/2-1) == len(data.fft_tensao):
+                    f = np.arange(0, int(Nsamples/2-1))/Nsamples
+                else:
+                    f = np.arange(0, int(Nsamples/2))/Nsamples
 
+                f = samplingFreq*f
                 # FFt tensao
                 max = np.max(data.fft_tensao)
                 ui.graphicsView_7.clear()
@@ -311,15 +327,6 @@ def program():
                 ui.graphicsView_8.plot(line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
                 ui.graphicsView_8.plot(2*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
                 ui.graphicsView_8.plot(3*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
-
-
-            # Calcula FPS
-            global tim, lastTime
-            tim = time()
-            deltaT = round((tim - lastTime)*1000)
-            fps = round(1/(tim-lastTime), 2)
-            ui.label_15.setText(str(fps))
-            lastTime = tim
 
     finally:
         # Chama de novo funcao prgram() depois de update_time segundos
@@ -338,9 +345,12 @@ def read_all():
         firstByte = porta.read()
         #print('FB = ' + str(int.from_bytes(firstByte, byteorder='big')))
         if int.from_bytes(firstByte, byteorder='big') == 254:
+            a = porta.read()
+            #print(a)
             #print("achou first byte")
             break
         else:
+            global error_count
             error_count = error_count + 1
             ui.label_17.setText(str(error_count))
     while True:
@@ -377,17 +387,17 @@ update_time = ui.doubleSpinBox_UpdateTime.value() * 1000
 # Labels tensao
 ui.graphicsView.setLabel('left', "Tensão", units='V')
 ui.graphicsView.setLabel('bottom', "Tempo", units='ms')
-ui.graphicsView.setYRange(0, 1000)
+ui.graphicsView.setYRange(-200, 200)
 
 # Labels corrente
-ui.graphicsView_2.setLabel('left', "Corrente", units='A')
+ui.graphicsView_2.setLabel('left', "Corrente", units='mA')
 ui.graphicsView_2.setLabel('bottom', "Tempo", units='ms')
-ui.graphicsView_2.setYRange(0, 1000)
+ui.graphicsView_2.setYRange(-150, 150)
 
 # Labels potencia
 ui.graphicsView_3.setLabel('left', "Potencia", units='W')
 ui.graphicsView_3.setLabel('bottom', "Tempo", units='ms')
-ui.graphicsView_3.setYRange(0, 1000)
+ui.graphicsView_3.setYRange(-30, 50)
 
 # Labels energia
 ui.graphicsView_4.setLabel('left', "Energia acumulada", units='J/min')
@@ -398,12 +408,12 @@ ui.graphicsView_4.setLabel('bottom', "Tempo", units='min')
 # Labels temperatura
 ui.graphicsView_5.setLabel('left', "Temperatura", units='C')
 ui.graphicsView_5.setLabel('bottom', "Tempo", units='ms')
-ui.graphicsView_5.setYRange(0, 300)
+ui.graphicsView_5.setYRange(-5, 90)
 
 # Labels iluminancia
-ui.graphicsView_6.setLabel('left', "Iluminancia", units='lx')
+ui.graphicsView_6.setLabel('left', "Iluminancia", units='lux')
 ui.graphicsView_6.setLabel('bottom', "Tempo", units='ms')
-ui.graphicsView_6.setYRange(0, 300)
+ui.graphicsView_6.setYRange(0, 400)
 
 # Labels tensao fft
 ui.graphicsView_7.setLabel('left', "Amplitude")

@@ -53,6 +53,16 @@
     </item>
     <item>
      <property name="text">
+      <string>1000000</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>500000</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>115200</string>
      </property>
     </item>
@@ -948,6 +958,19 @@
       </layout>
      </item>
     </layout>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_2">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>40</y>
+      <width>101</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Freeze plots</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
