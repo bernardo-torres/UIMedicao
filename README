@@ -1,0 +1,23 @@
+A planilha Parametros calcula as taxas de atualizacao da interface, taxa de
+amostragem dos canais e outros parametros em funcao dos inputs:
+Counter -> valor ate qual timer conta antes de gerar a interrupcao de compare/match
+NAmostras -> Numero de amostras para canal de tensao e corrente em cada envio do buffer_analisys
+Baud rate -> Baud rate
+Clock do timer -> Clock do timer apos o prescaler
+
+Instrucoes
+
+Link util:
+http://projects.skylogic.ca/blog/how-to-install-pyqt5-and-build-your-first-gui-in-python-3-4/
+
+instalar pyserial, pyqt5, pyqtgraph
+no caso do pyqt5-> pip instal pyqt5-tools
+
+Rodar linha abaixo no prompt para gerar codigo da interface criada .ui no script .py
+  pyuic5 -x UI.ui -o UIGenerated.py
+
+Caso o grafico do QT tenha sido promovido para o grafico plotWidget do pyqtgraph:
+  No arquivo gerado, inserir import abaixo
+    from pyqtgraph import PlotWidget
+  Remover import abaixo do arquivo gerado
+    from plotwidget import PlotWidget

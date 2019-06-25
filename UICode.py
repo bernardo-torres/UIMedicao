@@ -1,7 +1,8 @@
-from UI import *
+# Codigo que mostra a interface, le os dados e atualiza
+
+from UIGenerated import *
 import sys
 import serial
-from UICode_methods import *
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import pyqtgraph as pg
@@ -9,24 +10,36 @@ from time import sleep, time
 
 
 global porta, readAvailable, tim, lastTime, energia_acumulada, current_minute, last_en_time, error_count
+# Porta serial
 porta = serial.Serial()
+readAvailable = False
+
+# Numero de canais, numero de amostras, tamanho do buffer de cada canal
 Nchannels = 3
 Nsamples = 150  # no of samples per channel`
 Nbytes = Nsamples*2  # no of bytes received per channel
 tam = Nbytes * Nchannels  # no of bytes received total
-readAvailable = False
+
+# Taxa de amostragem doa canais de tensao e corrente
 samplingFreq = 2083
+# Vetores de tempo para tensao/corrente e iluminancia/temperatura
+temp = np.arange(0, 1000/samplingFreq*Nsamples, 1000/samplingFreq)
+temp2 = np.arange(0, 1000/samplingFreq*Nsamples, 3000/samplingFreq)
+
+# Contagem de erro na porta serial
 error_count = 0
+
+# Variaveis para calculo do FPS
 tim = time()
 lastTime = time()
 last_en_time = time()
-counter = 0
-
+# Vaiaveis p/Calculo de energia
 current_minute = 0
 energia_acumulada = 0
 En = np.array([])
 x_tE = np.array([])
 
+# inicializa alguns Vetores (mais para teste, nao e usado de fato)
 tensao = 0
 corrente = np.zeros(int(Nsamples))
 potencia = np.zeros(int(Nsamples))
@@ -34,10 +47,7 @@ iluminancia = np.zeros(int(Nsamples/3))
 termopar = np.zeros(int(Nsamples/3))
 lm35 = np.zeros(int(Nsamples/3))
 
-# Vetores de tempo
-temp = np.arange(0, 1000/samplingFreq*Nsamples, 1000/samplingFreq)
-temp2 = np.arange(0, 1000/samplingFreq*Nsamples, 3000/samplingFreq)
-
+# Variaveis para plotar linhas verticais no grafico da FFT
 line60hz1 = np.zeros(2)
 line60hz2 = np.zeros(2)
 line60hz1[0] = 60
@@ -46,6 +56,8 @@ line60hz2[0] = 0
 line60hz2[1] = 1
 
 
+# Classe values é utilizada para armazenar valores das grandezas apos a separacao
+# delas dentro do buffer e processamento
 class values:
     def __init__(self):
         self.tensao = 0
@@ -59,10 +71,9 @@ class values:
         self.potencia = 0
 
 
-# Lista as portas seriais disponiveis
+# Lista as portas seriais disponiveis. Retorna uma lista com os nomes das portas
 def serial_ports():
     """ Lists serial port names
-
         :raises EnvironmentError:
             On unsupported or unknown platforms
         :returns:
@@ -77,7 +88,6 @@ def serial_ports():
         ports = glob.glob('/dev/tty.*')
     else:
         raise EnvironmentError('Unsupported platform')
-
     result = []
     for port in ports:
         try:
@@ -93,30 +103,28 @@ def serial_ports():
 def update_ports():
     ui.comboBox_SerialPorts.clear()
     ui.comboBox_SerialPorts.addItems(serial_ports())
-    #ui.comboBox_SerialPorts.currentIndexChanged.connect(selection_port())
-
-
-def selection_port(i):
-    return ui.comboBox_SerialPorts.itemText(i)
 
 
 # Inicializa o programa
 def start_program():
     # abre e configura a porta serial utilizando os valores definidos
     try:
+        # Pega baud rate e porta dainterface
         porta.baudrate = int(ui.comboBox_Baudrate.currentText())
         porta.port = str(ui.comboBox_SerialPorts.currentText())
-        porta.timeout = 1
+        porta.timeout = 1       # Timeout 1s
         porta.open()
-        print(" Porta serial " + str(porta.name) + " aberta")
+        print("Porta serial " + str(porta.name) + " aberta")
         print(porta.is_open)
+
+        # Setar readAvailable permite que program() leia da porta
         global readAvailable
         readAvailable = True
         sleep(2)
-        print('aq')
-        # Inicia programa
+
+        # Inicia programa principal
         program()
-        print('Fecho')
+
     except serial.serialutil.SerialException:
         dlg = QMessageBox(None)
         dlg.setWindowTitle("Error!")
@@ -126,20 +134,56 @@ def start_program():
         dlg.exec_()
 
 
-# Separa buffer de dados em um vetor com inicio em init e fim em end
+# Le buffer da porta serial
+def read_all():
+    if not porta.timeout:
+        raise TypeError('Port needs to have a timeout set!')
+    read_buffer = b''
+    while True:
+        while (porta.inWaiting() == 0):
+            pass
+        # Le primeiro byte de inicio do buffer. Espera sempre o valor 254
+        firstByte = porta.read()
+        if int.from_bytes(firstByte, byteorder='big') == 254:
+            # Le o segundo byte de inicio
+            a = porta.read()
+            break
+        # Se o byte lido nao for 254, quer dizer que perdeu algum dado.
+        else:
+            global error_count
+            error_count = error_count + 1
+            ui.label_17.setText(str(error_count))
+    # Depois de ler os bytes de inicio, le o resto do buffer
+    while True:
+        # Read in chunks. Each chunk will wait as long as specified by
+        # timeout.
+        byte_chunk = porta.read(size=tam)
+        read_buffer += byte_chunk
+        # Se leu exatamente o numero de bytes correspondente ao tamanho do buffer esperado
+        if len(byte_chunk) == tam:
+            break
+        else:
+            print('Chegou aqui')
+
+    return read_buffer
+
+
+# Separa buffer de dados dos indices init ate end em um vetor separado
 def separate_buffer(buf, init, end):
     vect = np.zeros(int((end-init)/2))
     for i in range(init, end, 2):
         aux = buf[i]
+        # Junta valores high e low de dois em dois bytes
         vect[int((i-init)/2)] = (aux << 8) | buf[i+1]
     return vect
 
 
+# Separa buffer em variaveis especificas de tensao, corrente,
+# iluminancia e temperaturas. Buffer na ordem:
+# Nbytestensao, Nbytescorrente, Nbytes/3iluminancia, Nbytes/3temptermopar
+# e Nbytes/3templm35
 def buffer_analisys(buf):
-    # Separa buffer em variaveis especificas de tensao, corrente,
-    # iluminancia e temperaturas. Buffer na ordem:
-    # Nbytestensao, Nbytescorrente, Nbytes/3iluminancia, Nbytes/3temp1
-    # e Nbytes/3temp2
+    # Para cada uma das  variaveis contidas no buffer, separa em um vetor especifico
     init = 0
     end = int(Nbytes)
     tensao = separate_buffer(buf, init, end)
@@ -161,20 +205,22 @@ def buffer_analisys(buf):
     lm35 = separate_buffer(buf, init, end)
     temperatura = lm35 + termopar
 
+    # Transforma de 0-1023 para 0 a 5V e atualiza na interface valor medio de tensao das amostras
     correcao = 5/1023
     ui.label_31.setText(str(np.mean(tensao*correcao)))
     ui.label_32.setText(str(np.mean(corrente*correcao)))
     ui.label_33.setText(str(np.mean(iluminancia*correcao)))
     ui.label_34.setText(str(np.mean(termopar*correcao)))
     ui.label_36.setText(str(np.mean(lm35*correcao)))
-    # Aplica ganhos
+
+    # Processa os dados de tensao se checkbox Apply Gain esta marcada
     if ui.checkBox.isChecked() == 1:
 
         ganho_ampiso = 1/8
 
         ganho_tensao = 1001
         ganho_corrente = 5/6
-        offset = 2.35
+        offset = 2.35  # Nivel DC do somador
 
         ganho_LM = 100/(1 + 2000/220)
 
@@ -202,22 +248,23 @@ def buffer_analisys(buf):
     # Computa fft
     fft_tensao = np.fft.fft(tensao)
     fft_corrente = np.fft.fft(corrente)
-
-    # calcula grafico tensao na freq
+    # Valor absoluto da fft
     fft_tensao = abs(fft_tensao) * 1/Nsamples
     fft_corrente = abs(fft_corrente) * 1/Nsamples
-    # pega so as freq na banda de passagem. multiplica por dois por causa da simetria da transformada
+    # Multiplica por dois por causa da simetria da transformada
     tensao_freq = 2*fft_tensao[:int(Nsamples/2)]
     fft_corrente = 2*fft_corrente[:int(Nsamples/2)]
-    # tensao dc foi multiplicada por dois, voltamos ao valor original
+    # valor dc foi multiplicado por dois, voltamos ao valor original
     tensao_freq[0] *= 0.5
     fft_corrente[0] *= 0.5
 
+    # Potencia instantanea
     potencia = tensao*corrente/1000
 
     # energia (multiplica sempre pelo periodo)
     global energia_acumulada, current_minute, last_en_time, x_tE, En
     energia_acumulada += sum(potencia)/samplingFreq
+    # Tempo contou um minuto, atualiza vetores e grafico com energia acumulada
     if time() - last_en_time > 60:
         last_en_time = time()
         if current_minute < 10:
@@ -229,10 +276,11 @@ def buffer_analisys(buf):
             x_tE += 1
             ui.graphicsView_4.setXRange(current_minute - 9, current_minute)
         ui.graphicsView_4.clear()
-        ui.graphicsView_4.plot(x_tE, En,pen=pg.mkPen('r'))
+        ui.graphicsView_4.plot(x_tE, En, pen=pg.mkPen('r'))
         current_minute += 1
         energia_acumulada = 0
 
+    # Cria classe values e retorna
     data = values()
     data.tensao = tensao
     data.corrente = corrente
@@ -243,7 +291,6 @@ def buffer_analisys(buf):
     data.fft_tensao = tensao_freq
     data.fft_corrente = fft_corrente
     data.potencia = potencia
-
     return data
 
 
@@ -253,36 +300,36 @@ def program():
         if readAvailable:
             # Le conjunto de dados da porta serial
             read_buffer = read_all()
-            # print(read_buffer)
 
             # Calcula FPS
             global tim, lastTime
             tim = time()
-            deltaT = round((tim - lastTime)*1000)
             fps = round(1/(tim-lastTime), 2)
             ui.label_15.setText(str(fps))
             lastTime = tim
 
+            # Se checkbox Freeze esta marcada, retorna aqui. Se nao, atualiza graficos
             if ui.checkBox_2.isChecked() == 1:
                 return
 
+            # Separa dados do buffer e armazena na classe values data
             data = buffer_analisys(read_buffer)
 
             # Atualiza grafico tensao
-
             ui.graphicsView.clear()
             ui.graphicsView.plot(temp, data.tensao, pen='r')
-            ui.lineEdit.setText(str(round(np.amax(data.tensao), 2)))
-            rms = np.sqrt(np.mean(data.tensao**2))
+            ui.lineEdit.setText(str(round(np.amax(data.tensao), 2)))  # Pico
+            rms = np.sqrt(np.mean(data.tensao**2))  # Calcula rms da amostra
             ui.lineEdit_2.setText(str(round(rms, 2)))
 
             # Atualiza grafico corrente
             ui.graphicsView_2.clear()
             ui.graphicsView_2.plot(temp, data.corrente, pen=pg.mkPen('b'))
-            ui.lineEdit_3.setText(str(round(np.amax(data.corrente),2)))
-            rms = np.sqrt(np.mean(data.corrente**2))
+            ui.lineEdit_3.setText(str(round(np.amax(data.corrente), 2)))  # Pico
+            rms = np.sqrt(np.mean(data.corrente**2))  # Rms da amostra
             ui.lineEdit_4.setText(str(round(rms, 2)))
 
+            # De acordo com a aba atual, atualiza outros graficos
             tab_index = ui.tabWidget_2.currentIndex()
             if tab_index == 0:
                 # Atualiza grafico potencia
@@ -302,20 +349,20 @@ def program():
                 ui.graphicsView_5.plot(temp2, data.temperatura, pen=pg.mkPen('g'))
                 ui.lineEdit_6.setText(str(round(np.mean(data.lm35), 2)))
                 ui.lineEdit_7.setText(str(round(np.mean(data.termopar), 2)))
-            elif tab_index == 1:
 
+            elif tab_index == 1:
                 # Vetor de frequencias
                 if (Nsamples/2-1) == len(data.fft_tensao):
                     f = np.arange(0, int(Nsamples/2-1))/Nsamples
                 else:
                     f = np.arange(0, int(Nsamples/2))/Nsamples
-
                 f = samplingFreq*f
-                # FFt tensao
+
+                # Grafico FFt tensao
                 max = np.max(data.fft_tensao)
                 ui.graphicsView_7.clear()
                 ui.graphicsView_7.plot(f, data.fft_tensao, pen=pg.mkPen('k'))
-                #ui.graphicsView_7.addLine(x=60, y=None, pen=pg.mkPen('g'))
+                # Linhas verticais nos 3 primeiros harmonicos
                 ui.graphicsView_7.plot(line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
                 ui.graphicsView_7.plot(2*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
                 ui.graphicsView_7.plot(3*line60hz1, max*line60hz2,  pen=pg.mkPen('g'))
@@ -333,43 +380,6 @@ def program():
         QtCore.QTimer.singleShot(update_time, program)
 
 
-def read_all():
-    """Read all characters on the serial port and return them."""
-    if not porta.timeout:
-        raise TypeError('Port needs to have a timeout set!')
-
-    read_buffer = b''
-    while True:
-        while (porta.inWaiting() == 0):
-            pass
-        firstByte = porta.read()
-        #print('FB = ' + str(int.from_bytes(firstByte, byteorder='big')))
-        if int.from_bytes(firstByte, byteorder='big') == 254:
-            a = porta.read()
-            #print(a)
-            #print("achou first byte")
-            break
-        else:
-            global error_count
-            error_count = error_count + 1
-            ui.label_17.setText(str(error_count))
-    while True:
-        # Read in chunks. Each chunk will wait as long as specified by
-        # timeout. Increase chunk_size to fail quicker
-
-        byte_chunk = porta.read(size=tam)
-        read_buffer += byte_chunk
-        if len(byte_chunk) == tam:
-            break
-        else:
-            print('Chegou aqui')
-
-    return read_buffer
-
-def processOneThing():
-    print(22)
-
-
 # Roda janela
 app = QtWidgets.QApplication(sys.argv)
 app.setStyle("fusion")
@@ -377,11 +387,12 @@ MainWindow = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(MainWindow)
 
-# Conecta sinal do botao com a funcao
+# Conecta sinal do botao com a funcao respectiva
 ui.comboBox_SerialPorts.addItems(serial_ports())  # mostra as portas seriais disponíveis
 ui.pushButton_UpdatePorts.clicked.connect(update_ports)  # botão para atualizar as portas seriis disponíveis
 ui.pushButton_StartProgram.clicked.connect(start_program)  # botão para iniciar o programa
-# ui.comboBox_Baudrate.currentIndexChanged.connect(self.selection_baudrate)
+
+# Pega update time da interface
 update_time = ui.doubleSpinBox_UpdateTime.value() * 1000
 
 # Labels tensao
@@ -402,8 +413,6 @@ ui.graphicsView_3.setYRange(-30, 50)
 # Labels energia
 ui.graphicsView_4.setLabel('left', "Energia acumulada", units='J/min')
 ui.graphicsView_4.setLabel('bottom', "Tempo", units='min')
-#ui.graphicsView_4.setYRange(0, 1000)
-
 
 # Labels temperatura
 ui.graphicsView_5.setLabel('left', "Temperatura", units='C')
@@ -418,19 +427,15 @@ ui.graphicsView_6.setYRange(0, 400)
 # Labels tensao fft
 ui.graphicsView_7.setLabel('left', "Amplitude")
 ui.graphicsView_7.setLabel('bottom', "Frequencia", units='Hz')
-# ui.graphicsView_7.setYRange(0, 1000)
 
 # Labels corrente fft
 ui.graphicsView_8.setLabel('left', "Amplitude")
 ui.graphicsView_8.setLabel('bottom', "Frequencia", units='Hz')
-# ui.graphicsView_8.setYRange(0, 1000)
 
-# Sampling freq
+# Mostra taxa de amostragem dos canais A0 e A1 e numero de amostras
 ui.label_16.setText(str(samplingFreq) + ' Hz')
-
-# Data points
 ui.label_19.setText(str(Nsamples))
 
-
+# Mostra a janela e fecha o programa quando ela é fechada (?)
 MainWindow.show()
 sys.exit(app.exec_())

@@ -1,6 +1,0 @@
-Instrucoes
-
-http://projects.skylogic.ca/blog/how-to-install-pyqt5-and-build-your-first-gui-in-python-3-4/
-
-pyuic5 -x UI.ui -o UI.py
-from pyqtgraph import PlotWidget
